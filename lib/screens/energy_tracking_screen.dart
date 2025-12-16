@@ -63,7 +63,8 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return DateFormat('Ngày d tháng M', 'vi').format(date);
+      // Hiển thị rõ ràng ngày/tháng/năm để tránh lỗi ký tự bị chèn sai
+      return 'Ngày ${date.day} tháng ${date.month}/${date.year}';
     } catch (e) {
       return dateString;
     }
@@ -97,10 +98,14 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                       ],
                     ),
                   )
-                : SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: const Color(0xFF2196F3),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                 // Header
@@ -116,7 +121,7 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                       child: Text(
                         'Theo dõi Điện năng',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -138,8 +143,8 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                     children: [
                           Text(
                             _latestData != null
-                                ? 'Kỳ thanh toán ${DateFormat('tháng M', 'vi').format(DateTime.parse(_latestData!.recordedAt))}'
-                                : 'Kỳ thanh toán',
+                                ? 'Kỳ thanh toán tháng ${DateTime.parse(_latestData!.recordedAt).month}/${DateTime.parse(_latestData!.recordedAt).year}'
+                                : 'Kỳ thanh toán tháng này',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[400],
@@ -161,7 +166,7 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  'Tổng tiền điện tạm tính: ',
+                                  'Tổng tiền tạm tính: ',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey[400],
@@ -348,8 +353,9 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                                                 final date = DateTime.parse(
                                                   _dailyData!.consumptions[value.toInt()].recordedAt,
                                                 );
+                                                // Chỉ hiển thị ngày (1, 2, 3, ...)
                                                 return Text(
-                                                  DateFormat('d/M', 'vi').format(date),
+                                                  '${date.day}',
                                                   style: TextStyle(
                                                     color: Colors.grey[400],
                                                     fontSize: 12,
@@ -421,7 +427,8 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
             ),
           ),
         ),
-      ),
+                    ),
+                  ),
     );
   }
 
@@ -486,26 +493,16 @@ class _EnergyTrackingScreenState extends State<EnergyTrackingScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Chỉ số cũ: ${record.lastMeter.value.toStringAsFixed(1)} ${record.lastMeter.unit}, Chỉ số mới: ${record.currentMeter.value.toStringAsFixed(1)} ${record.currentMeter.unit}',
+                  'Tiêu thụ: ${record.consumption.value.toStringAsFixed(1)} ${record.consumption.unit}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[400],
                   ),
                   overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
+                  maxLines: 1,
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '${record.consumption.value.toStringAsFixed(1)} ${record.consumption.unit}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

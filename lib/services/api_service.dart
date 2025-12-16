@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/api_response.dart';
 import '../models/auth_models.dart';
 import '../models/consumption_models.dart';
+import '../models/notification_models.dart';
 import '../services/auth_service.dart';
 import '../utils/constants.dart';
 
@@ -135,6 +136,25 @@ class ApiService {
       return ApiResponse<DailyConsumptionResponse>.fromJson(
         response.data as Map<String, dynamic>,
         (json) => DailyConsumptionResponse.fromJson(json),
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // Get notifications
+  Future<ApiResponse<NotificationListResponse>> getNotifications({
+    required int limit,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.notificationsEndpoint,
+        queryParameters: {'limit': limit},
+      );
+
+      return ApiResponse<NotificationListResponse>.fromJson(
+        response.data as Map<String, dynamic>,
+        (json) => NotificationListResponse.fromJson(json),
       );
     } on DioException catch (e) {
       throw _handleError(e);

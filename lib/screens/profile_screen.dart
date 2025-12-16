@@ -86,7 +86,7 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 // Name
                 const Text(
-                  'Trần Văn A',
+                  'Trần Đình Thắng',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -96,7 +96,7 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 4),
                 // Email
                 Text(
-                  'example@email.com',
+                  'tranthangkhuong203@gmail.com',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[400],
@@ -107,19 +107,19 @@ class ProfileScreen extends StatelessWidget {
                 _buildInfoItem(
                   icon: Icons.person_outline,
                   label: 'Họ và tên',
-                  value: 'Trần Văn A',
+                  value: 'Trần Đình Thắng',
                 ),
                 const SizedBox(height: 16),
                 _buildInfoItem(
                   icon: Icons.email_outlined,
                   label: 'Email',
-                  value: 'example@email.com',
+                  value: 'tranthangkhuong203@gmail.com',
                 ),
                 const SizedBox(height: 16),
                 _buildInfoItem(
                   icon: Icons.phone_outlined,
                   label: 'Số điện thoại',
-                  value: '090 xxx 1234',
+                  value: '0325687677',
                 ),
                 const SizedBox(height: 24),
                 // Edit Button

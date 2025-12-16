@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'bill_history_screen.dart';
+import 'notifications_screen.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../models/consumption_models.dart';
 
 class BillInfoScreen extends StatefulWidget {
+  final int notificationCount;
   final VoidCallback? onNavigateToEnergyTab;
+  final Function(int)? onNotificationCountChanged;
   
-  const BillInfoScreen({super.key, this.onNavigateToEnergyTab});
+  const BillInfoScreen({
+    super.key,
+    this.onNavigateToEnergyTab,
+    this.notificationCount = 0,
+    this.onNotificationCountChanged,
+  });
 
   @override
   State<BillInfoScreen> createState() => _BillInfoScreenState();
@@ -22,10 +30,12 @@ class _BillInfoScreenState extends State<BillInfoScreen> {
   bool _isLoading = true;
   String? _error;
   String _username = 'Thắng Trần';
+  int _notificationCount = 0;
 
   @override
   void initState() {
     super.initState();
+    _notificationCount = widget.notificationCount;
     _loadUsername();
     _loadData();
   }
@@ -93,12 +103,21 @@ class _BillInfoScreenState extends State<BillInfoScreen> {
   }
 
   String _calculatePricePerKwh() {
-    if (_latestConsumption == null || _latestConsumption!.consumption.value == 0) {
+    if (_latestConsumption == null) {
       return 'N/A';
     }
-    final pricePerKwh = _latestConsumption!.bill.amount / 
-                        _latestConsumption!.consumption.value;
-    return '${_formatCurrency(pricePerKwh)}/${_latestConsumption!.consumption.unit}';
+    // Sử dụng pricePerUnit từ API nếu có, nếu không thì tính toán
+    final pricePerUnit = _latestConsumption!.bill.pricePerUnit;
+    if (pricePerUnit != null && pricePerUnit > 0) {
+      return '${_formatCurrency(pricePerUnit)}/${_latestConsumption!.consumption.unit}';
+    }
+    // Fallback: tính toán nếu không có pricePerUnit
+    if (_latestConsumption!.consumption.value == 0) {
+      return 'N/A';
+    }
+    final calculatedPrice = _latestConsumption!.bill.amount / 
+                            _latestConsumption!.consumption.value;
+    return '${_formatCurrency(calculatedPrice)}/${_latestConsumption!.consumption.unit}';
   }
 
   String _formatNumber(double value) {
@@ -167,10 +186,14 @@ class _BillInfoScreenState extends State<BillInfoScreen> {
                       ],
                     ),
                   )
-                : SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
+                : RefreshIndicator(
+                    onRefresh: _loadData,
+                    color: const Color(0xFF2196F3),
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Header
@@ -207,10 +230,58 @@ class _BillInfoScreenState extends State<BillInfoScreen> {
                                   color: Colors.grey[800],
                                   shape: BoxShape.circle,
                                 ),
-                                child: IconButton(
-                                  icon: const Icon(Icons.notifications_outlined),
-                                  color: Colors.white,
-                                  onPressed: () {},
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Center(
+                                      child: IconButton(
+                                        icon: const Icon(Icons.notifications_outlined),
+                                        color: Colors.white,
+                                        onPressed: () async {
+                                          final result = await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => NotificationsScreen(
+                                                onNotificationRead: widget.onNotificationCountChanged,
+                                              ),
+                                            ),
+                                          );
+                                          // Reload notification count when returning from notifications screen
+                                          if (mounted && widget.onNotificationCountChanged != null) {
+                                            // The callback will be called from NotificationsScreen
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    if (_notificationCount > 0)
+                                      Positioned(
+                                        right: 4,
+                                        top: 6,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 18,
+                                            minHeight: 18,
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              _notificationCount > 9
+                                                  ? '9+'
+                                                  : '$_notificationCount',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -601,7 +672,8 @@ class _BillInfoScreenState extends State<BillInfoScreen> {
                       ),
                     ),
                   ),
-      ),
+                    ),
+                  ),
     );
   }
 }

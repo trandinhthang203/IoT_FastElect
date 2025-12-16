@@ -29,13 +29,15 @@ class ConsumptionValue {
 class Bill {
   final double amount;
   final String currency;
+  final double? pricePerUnit;
 
-  Bill({required this.amount, required this.currency});
+  Bill({required this.amount, required this.currency, this.pricePerUnit});
 
   factory Bill.fromJson(Map<String, dynamic> json) {
     return Bill(
       amount: json['amount'] != null ? (json['amount'] as num).toDouble() : 0.0,
       currency: json['currency']?.toString() ?? 'VND',
+      pricePerUnit: json['pricePerUnit'] != null ? (json['pricePerUnit'] as num).toDouble() : null,
     );
   }
 }
@@ -61,7 +63,7 @@ class MonthlyConsumption {
           : ConsumptionValue(value: 0.0, unit: 'kWh'),
       bill: json['bill'] != null && json['bill'] is Map<String, dynamic>
           ? Bill.fromJson(json['bill'] as Map<String, dynamic>)
-          : Bill(amount: 0.0, currency: 'VND'),
+          : Bill(amount: 0.0, currency: 'VND', pricePerUnit: null),
       recordedAt: json['recordedAt']?.toString() ?? '',
     );
   }
@@ -114,7 +116,7 @@ class LatestConsumptionResponse {
           : ConsumptionValue(value: 0.0, unit: 'kWh'),
       bill: json['bill'] != null && json['bill'] is Map<String, dynamic>
           ? Bill.fromJson(json['bill'] as Map<String, dynamic>)
-          : Bill(amount: 0.0, currency: 'VND'),
+          : Bill(amount: 0.0, currency: 'VND', pricePerUnit: null),
       recordedAt: json['recordedAt']?.toString() ?? '',
     );
   }

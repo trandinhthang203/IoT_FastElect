@@ -56,7 +56,8 @@ class _BillHistoryScreenState extends State<BillHistoryScreen> {
   String _formatMonth(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return DateFormat('Tháng M năm yyyy', 'vi').format(date);
+      // Format: "Tháng M năm yyyy" (ví dụ: "Tháng 12 năm 2025")
+      return 'Tháng ${date.month} năm ${date.year}';
     } catch (e) {
       return dateString;
     }
@@ -120,19 +121,34 @@ class _BillHistoryScreenState extends State<BillHistoryScreen> {
                           ),
                         )
                       : _monthlyData == null || _monthlyData!.consumptions.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'Chưa có dữ liệu',
-                                style: TextStyle(color: Colors.grey),
+                          ? RefreshIndicator(
+                              onRefresh: _loadData,
+                              color: const Color(0xFF2196F3),
+                              child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.5,
+                                  child: const Center(
+                                    child: Text(
+                                      'Chưa có dữ liệu',
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
+                                  ),
+                                ),
                               ),
                             )
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: _monthlyData!.consumptions.length,
-                              itemBuilder: (context, index) {
-                                final consumption = _monthlyData!.consumptions[index];
-                                return _buildBillCard(context, consumption);
-                              },
+                          : RefreshIndicator(
+                              onRefresh: _loadData,
+                              color: const Color(0xFF2196F3),
+                              child: ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                itemCount: _monthlyData!.consumptions.length,
+                                itemBuilder: (context, index) {
+                                  final consumption = _monthlyData!.consumptions[index];
+                                  return _buildBillCard(context, consumption);
+                                },
+                              ),
                             ),
             ),
           ],
@@ -142,8 +158,31 @@ class _BillHistoryScreenState extends State<BillHistoryScreen> {
   }
 
   Widget _buildBillCard(BuildContext context, MonthlyConsumption consumption) {
-    // Assume unpaid if bill amount > 0, you may need to adjust this logic based on your API
-    final bool isPaid = consumption.bill.amount > 0;
+    // Trạng thái:
+    // - Nếu là tháng hiện tại và CHƯA hết tháng => luôn hiển thị "Chưa thanh toán"
+    // - Ngược lại, dựa vào amount: > 0 là đã thanh toán, = 0 là chưa thanh toán
+    bool isPaid;
+    try {
+      final recordedDate = DateTime.parse(consumption.recordedAt);
+      final now = DateTime.now();
+      final isCurrentMonth =
+          recordedDate.year == now.year && recordedDate.month == now.month;
+      final lastDayOfMonth =
+          DateTime(recordedDate.year, recordedDate.month + 1, 0).day;
+      final isBeforeEndOfMonth = now.year == recordedDate.year &&
+          now.month == recordedDate.month &&
+          now.day < lastDayOfMonth;
+
+      if (isCurrentMonth && isBeforeEndOfMonth) {
+        // Chưa hết tháng hiện tại -> xem như chưa đến kỳ thanh toán
+        isPaid = false;
+      } else {
+        isPaid = consumption.bill.amount > 0;
+      }
+    } catch (_) {
+      // Nếu parse lỗi thì fallback về logic cũ
+      isPaid = consumption.bill.amount > 0;
+    }
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -208,7 +247,7 @@ class _BillHistoryScreenState extends State<BillHistoryScreen> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  'Tổng điện tiêu thụ: ',
+                  'Điện tiêu thụ: ',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[400],
